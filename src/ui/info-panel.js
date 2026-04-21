@@ -33,8 +33,10 @@ export class InfoPanel {
     const entity = this.selected;
     const p = entity?._props ?? {};
     const srcId = entity?._sourceId ?? "";
-    const isMil = srcId === "adsbMil";
 
+    if (srcId === "osmCams") return this.renderCamera(p);
+
+    const isMil = srcId === "adsbMil";
     this.contentEl.innerHTML = `
       <div class="callsign">${escape(p.callsign ?? p.icao24?.toUpperCase() ?? "—")}</div>
       <div class="meta">
@@ -53,6 +55,34 @@ export class InfoPanel {
         ${row("On ground", p.onGround == null ? null : p.onGround ? "yes" : "no")}
         ${row("Lat",      p.lat?.toFixed(4))}
         ${row("Lon",      p.lon?.toFixed(4))}
+      </div>
+    `;
+  }
+
+  renderCamera(p) {
+    // OSM link lets you see what the camera actually is / nearby context.
+    const osmUrl = `https://www.openstreetmap.org/node/${p.id}`;
+    // Google Street View at the camera coordinates is usually the closest
+    // thing to "see what the camera sees" without scraping the camera itself.
+    const streetUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}`;
+    this.contentEl.innerHTML = `
+      <div class="callsign">${escape(p.name || p.operator || `Camera ${p.id}`)}</div>
+      <div class="meta">
+        <span class="source-tag cam">${escape(p.source)}</span>
+      </div>
+      <div class="grid">
+        ${row("Type",        p.type)}
+        ${row("Zone",        p.zone)}
+        ${row("Direction",   p.direction == null ? null : `${p.direction}°`)}
+        ${row("Mount",       p.mount)}
+        ${row("Operator",    p.operator)}
+        ${row("Description", p.description)}
+        ${row("Lat",         p.lat?.toFixed(5))}
+        ${row("Lon",         p.lon?.toFixed(5))}
+      </div>
+      <div class="actions">
+        <a class="btn" href="${osmUrl}" target="_blank" rel="noopener">View on OSM</a>
+        <a class="btn" href="${streetUrl}" target="_blank" rel="noopener">Street View</a>
       </div>
     `;
   }

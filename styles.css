@@ -306,6 +306,31 @@ html, body {
   background: rgba(255, 80, 80, 0.14);
   color: var(--danger);
 }
+#infoContent .source-tag.cam {
+  background: rgba(160, 232, 120, 0.14);
+  color: #a0e878;
+}
+#infoContent .actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#infoContent .btn {
+  flex: 1;
+  display: inline-block;
+  text-align: center;
+  padding: 7px 10px;
+  background: rgba(74, 211, 255, 0.08);
+  border: 1px solid rgba(74, 211, 255, 0.3);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+#infoContent .btn:hover { background: rgba(74, 211, 255, 0.18); }
 
 /* Boot error */
 #bootError {

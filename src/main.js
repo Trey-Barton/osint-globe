@@ -21,7 +21,7 @@ async function main() {
   const viewer = await createViewer("cesiumContainer");
 
   // Build data sources from registry; attach + start each.
-  const sources = buildSources(config);
+  const sources = buildSources(config, { viewer });
   for (const src of sources) {
     src.attach(viewer);
     src.start();

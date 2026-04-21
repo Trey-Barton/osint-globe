@@ -20,6 +20,8 @@ export function makeAircraftApply({ colorFor = altitudeColor, isMilitary = false
 
     // Billboard (icon). Rotated to heading. Cesium uses radians clockwise from north,
     // same as ADS-B "track" heading in degrees — just convert.
+    // No disableDepthTestDistance: aircraft on the far side of the globe are
+    // correctly occluded by the globe surface.
     if (!entity.billboard) {
       entity.billboard = new Cesium.BillboardGraphics({
         image: iconFor(color),
@@ -27,7 +29,6 @@ export function makeAircraftApply({ colorFor = altitudeColor, isMilitary = false
         height: 22,
         verticalOrigin: Cesium.VerticalOrigin.CENTER,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
         scaleByDistance: new Cesium.NearFarScalar(1e3, 1.0, 2e7, 0.5),
       });
     } else {

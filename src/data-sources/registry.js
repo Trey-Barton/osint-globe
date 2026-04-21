@@ -5,8 +5,9 @@
 
 import { OpenSkySource } from "./opensky.js";
 import { AdsbMilSource } from "./adsb-mil.js";
+import { OsmCamerasSource } from "./osm-cameras.js";
 
-export function sources(config) {
+export function sources(config, ctx = {}) {
   const polls = config.POLL_INTERVALS ?? {};
   const ep = config.ENDPOINTS ?? {};
   return [
@@ -18,6 +19,10 @@ export function sources(config) {
     new AdsbMilSource({
       pollMs:   polls.adsbMil ?? 15_000,
       endpoint: ep.adsbMil,
+    }),
+    new OsmCamerasSource({
+      pollMs:   polls.osmCams ?? 8_000,
+      viewer:   ctx.viewer,
     }),
     // Add more here. Examples worth considering:
     //   - AisStream for maritime AIS (wss://stream.aisstream.io/v0/stream, requires key)

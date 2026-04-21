@@ -115,4 +115,18 @@ function tuneScene(viewer) {
   viewer.clock.shouldAnimate = true;
   viewer.clock.currentTime = Cesium.JulianDate.now();
   viewer.clock.multiplier = 1;
+
+  // Zoom tuning: faster scroll, smooth inertia, can get closer to surface.
+  const cam = scene.screenSpaceCameraController;
+  cam.minimumZoomDistance = 50;            // can zoom in to ~rooftop (was ~2000m default)
+  cam.maximumZoomDistance = 25_000_000;    // back to geostationary-ish
+  cam.zoomEventTypes = [                   // wheel + pinch + right-drag to zoom
+    Cesium.CameraEventType.WHEEL,
+    Cesium.CameraEventType.PINCH,
+    Cesium.CameraEventType.RIGHT_DRAG,
+  ];
+  cam.inertiaZoom = 0.9;                   // smooth glide after scroll (0..1)
+  cam.inertiaSpin = 0.85;
+  cam.inertiaTranslate = 0.85;
+  cam._zoomFactor = 8.0;                   // wheel tick sensitivity (default ~5)
 }

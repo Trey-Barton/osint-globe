@@ -86,24 +86,37 @@ export const GLOBE_STYLES = {
     swatch: "#ffe259",
     requiresKey: null,
     async build() {
-      // Base: Blue Marble so gaps behind clouds still read as Earth.
+      // Base: Blue Marble fills any gaps (orbital swaths, poles, etc.)
       const base = gibsProvider({
         layer: "BlueMarble_NextGeneration",
         matrixSet: "GoogleMapsCompatible_Level8",
         format: "jpeg",
         maximumLevel: 8,
       });
-      const live = gibsProvider({
+      // MODIS Terra + Aqua for today. Each satellite has orbital gaps, but
+      // Terra (10:30am) and Aqua (1:30pm) have offset passes and fill each
+      // other's gaps. colorToAlpha turns the black no-data pixels transparent
+      // so underlying layers show through.
+      const date = gibsLatestDate();
+      const terra = gibsProvider({
         layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
         matrixSet: "GoogleMapsCompatible_Level9",
         format: "jpg",
-        date: gibsLatestDate(),
+        date,
+        maximumLevel: 9,
+      });
+      const aqua = gibsProvider({
+        layer: "MODIS_Aqua_CorrectedReflectance_TrueColor",
+        matrixSet: "GoogleMapsCompatible_Level9",
+        format: "jpg",
+        date,
         maximumLevel: 9,
       });
       return {
         layers: [
-          { provider: base, alpha: 1.0 },
-          { provider: live, alpha: 1.0 },
+          { provider: base,  alpha: 1.0 },
+          { provider: aqua,  alpha: 1.0, colorToAlpha: "#000000", colorToAlphaThreshold: 0.08 },
+          { provider: terra, alpha: 1.0, colorToAlpha: "#000000", colorToAlphaThreshold: 0.08 },
         ],
       };
     },
@@ -175,9 +188,13 @@ export async function applyStyle(viewer, styleId, config = {}) {
 
   const built = await style.build({ key, config });
 
-  for (const { provider, alpha } of built.layers ?? []) {
-    const layer = viewer.imageryLayers.addImageryProvider(provider);
-    if (alpha != null) layer.alpha = alpha;
+  for (const spec of built.layers ?? []) {
+    const layer = viewer.imageryLayers.addImageryProvider(spec.provider);
+    if (spec.alpha != null) layer.alpha = spec.alpha;
+    if (spec.colorToAlpha) {
+      layer.colorToAlpha = Cesium.Color.fromCssColorString(spec.colorToAlpha);
+      layer.colorToAlphaThreshold = spec.colorToAlphaThreshold ?? 0.08;
+    }
   }
 
   if (built.tileset) {
