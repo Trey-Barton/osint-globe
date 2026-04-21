@@ -150,10 +150,22 @@ export const GLOBE_STYLES = {
     name: "Google 3D Tiles",
     swatch: "#ff5050",
     requiresKey: "GOOGLE_MAPS_KEY",
+    // Photorealistic 3D tiles are intense — drop the atmosphere so it doesn't
+    // wash out the buildings, keep sun lighting for shadows.
+    sceneOverrides: {
+      showGroundAtmosphere: false,
+      atmosphereLightIntensity: 4.0,
+    },
     async build({ key }) {
       if (!key) throw new Error("GOOGLE_MAPS_KEY required for google3D");
-      const url = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${encodeURIComponent(key)}`;
-      const tileset = await Cesium.Cesium3DTileset.fromUrl(url, { showCreditsOnScreen: true });
+      // Cesium's dedicated helper handles Google's session tokens and key
+      // forwarding. Plain Cesium3DTileset.fromUrl() won't work — Google's tile
+      // tree uses relative URIs + per-session tokens that must be re-appended
+      // to every subsequent request.
+      // Signature is (key, options) — key is a plain string.
+      const tileset = await Cesium.createGooglePhotorealistic3DTileset(key, {
+        showCreditsOnScreen: true,
+      });
       return { layers: [], tileset };
     },
   },
