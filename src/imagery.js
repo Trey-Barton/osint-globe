@@ -150,23 +150,32 @@ export const GLOBE_STYLES = {
     name: "Google 3D Tiles",
     swatch: "#ff5050",
     requiresKey: "GOOGLE_MAPS_KEY",
-    // Photorealistic 3D tiles are intense — drop the atmosphere so it doesn't
-    // wash out the buildings, keep sun lighting for shadows.
     sceneOverrides: {
       showGroundAtmosphere: false,
       atmosphereLightIntensity: 4.0,
     },
     async build({ key }) {
       if (!key) throw new Error("GOOGLE_MAPS_KEY required for google3D");
-      // Cesium's dedicated helper handles Google's session tokens and key
-      // forwarding. Plain Cesium3DTileset.fromUrl() won't work — Google's tile
-      // tree uses relative URIs + per-session tokens that must be re-appended
-      // to every subsequent request.
-      // Signature is (key, options) — key is a plain string.
+      // Cesium's dedicated helper handles Google's session tokens and API key
+      // forwarding — Cesium3DTileset.fromUrl() won't work because Google's
+      // tile tree uses per-session tokens that must be re-appended to every
+      // subsequent request.
       const tileset = await Cesium.createGooglePhotorealistic3DTileset(key, {
         showCreditsOnScreen: true,
       });
-      return { layers: [], tileset };
+      // Layer Esri aerial on the base globe UNDER the tileset. Google's
+      // photorealistic coverage is partial (mostly cities + major features).
+      // Where 3D tiles exist, they occlude the globe; where they don't, Esri
+      // shows through, so you never see empty black ocean or land.
+      const esri = await Cesium.ArcGisMapServerImageryProvider.fromUrl(
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
+        { enablePickFeatures: false },
+      );
+      return {
+        layers: [{ provider: esri, alpha: 1.0 }],
+        tileset,
+        keepGlobeVisible: true,
+      };
     },
   },
 };
@@ -211,7 +220,10 @@ export async function applyStyle(viewer, styleId, config = {}) {
 
   if (built.tileset) {
     viewer.scene.primitives.add(built.tileset);
-    viewer.scene.globe.show = false;
+    // Default: hide the base globe (tileset replaces it). When a style sets
+    // keepGlobeVisible, we keep the imagery-textured globe underneath so
+    // areas without 3D tile coverage still show imagery instead of empty space.
+    viewer.scene.globe.show = built.keepGlobeVisible ? true : false;
     viewer.__osintTileset = built.tileset;
   }
 
