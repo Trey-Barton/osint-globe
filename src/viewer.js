@@ -116,17 +116,23 @@ function tuneScene(viewer) {
   viewer.clock.currentTime = Cesium.JulianDate.now();
   viewer.clock.multiplier = 1;
 
-  // Zoom tuning: faster scroll, smooth inertia, can get closer to surface.
+  // Zoom + trackpad tuning.
+  //   - Keep Cesium's default zoom event bindings (WHEEL, MIDDLE_DRAG, PINCH,
+  //     RIGHT_DRAG). On macOS trackpad, two-finger scroll fires WheelEvent and
+  //     pinch fires WheelEvent with ctrlKey=true — Cesium handles both via
+  //     the WHEEL binding, so we just don't touch the defaults.
+  //   - Inertia makes drag/zoom glide smoothly after release.
+  //   - Close-in minimumZoomDistance lets you get down to street level.
   const cam = scene.screenSpaceCameraController;
-  cam.minimumZoomDistance = 50;            // can zoom in to ~rooftop (was ~2000m default)
-  cam.maximumZoomDistance = 25_000_000;    // back to geostationary-ish
-  cam.zoomEventTypes = [                   // wheel + pinch + right-drag to zoom
-    Cesium.CameraEventType.WHEEL,
-    Cesium.CameraEventType.PINCH,
-    Cesium.CameraEventType.RIGHT_DRAG,
-  ];
-  cam.inertiaZoom = 0.9;                   // smooth glide after scroll (0..1)
-  cam.inertiaSpin = 0.85;
-  cam.inertiaTranslate = 0.85;
-  cam._zoomFactor = 8.0;                   // wheel tick sensitivity (default ~5)
+  cam.minimumZoomDistance = 50;
+  cam.maximumZoomDistance = 25_000_000;
+  cam.inertiaZoom        = 0.9;
+  cam.inertiaSpin        = 0.85;
+  cam.inertiaTranslate   = 0.85;
+  // Don't touch cam.zoomEventTypes — defaults cover wheel + trackpad + pinch.
+  // Don't touch private _zoomFactor — caused regressions; use inertia instead.
+
+  // Trackpad pinch (Ctrl+wheel synthesized by macOS) — ensure it's not being
+  // eaten by the browser for page zoom when focus is on the canvas.
+  viewer.canvas.addEventListener("wheel", (e) => { e.preventDefault(); }, { passive: false });
 }
