@@ -1,0 +1,18 @@
+# Local config with optional API keys — copy from config.example.js.
+# If you want to commit your own config, remove this line.
+config.js
+
+# Editor / OS cruft
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Claude Code local state
+.claude/

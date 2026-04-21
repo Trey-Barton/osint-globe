@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSINT Globe — Live Surveillance</title>
+
+  <!-- Cesium from CDN. Pinned version for reproducibility. -->
+  <link
+    rel="stylesheet"
+    href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css"
+  />
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="title">OSINT GLOBE</span>
+      <span class="subtitle">live aerial surveillance</span>
+    </div>
+    <div id="statusBar"></div>
+  </header>
+
+  <aside id="controlPanel">
+    <h2>Globe</h2>
+    <div id="globeStyles"></div>
+    <h2>Layers</h2>
+    <div id="layerToggles"></div>
+    <h2>Filter</h2>
+    <div class="filter-row">
+      <label>Min altitude (ft)</label>
+      <input type="number" id="minAltFt" value="0" step="500" />
+    </div>
+    <div class="filter-row">
+      <label>Callsign contains</label>
+      <input type="text" id="callsignFilter" placeholder="e.g. RCH, AF1" />
+    </div>
+    <p class="hint">Click any aircraft for details.</p>
+  </aside>
+
+  <aside id="infoPanel" class="hidden">
+    <button id="infoClose" aria-label="Close">&times;</button>
+    <div id="infoContent"></div>
+  </aside>
+
+  <div id="bootError" class="hidden"></div>
+
+  <!-- Config: copy config.example.js -> config.js and fill in keys. -->
+  <script src="./config.js" onerror="window.__configMissing=true"></script>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
