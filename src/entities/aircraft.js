@@ -53,7 +53,7 @@ export function makeAircraftApply({ colorFor = altitudeColor, isMilitary = false
         pixelOffset: new Cesium.Cartesian2(0, -18),
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5e6),
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 1.5e6),
         scale: 0.95,
       });
     } else {

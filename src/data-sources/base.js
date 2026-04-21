@@ -48,20 +48,38 @@ export class DataSource {
 
   start() {
     if (this._timer) return;
+    let backoffSkips = 0;   // how many more ticks to skip
+    let backoffLevel = 0;   // current exponential level (0..6 → 1..64 skips)
+
     const tick = async () => {
+      // Rate-limit backoff: skip this tick if we're still cooling down.
+      if (backoffSkips > 0) {
+        backoffSkips--;
+        return;
+      }
       try {
         this.status.state = "polling";
         this._emit();
         await this.fetch();
-        this.pruneStale();
         this.status.state = "ok";
         this.status.error = null;
         this.status.lastUpdate = Date.now();
+        backoffLevel = 0; // success resets backoff
       } catch (err) {
-        console.warn(`[${this.id}] fetch failed:`, err);
+        const msg = err?.message ?? String(err);
+        console.warn(`[${this.id}] fetch failed:`, msg);
         this.status.state = "error";
-        this.status.error = err?.message ?? String(err);
+        this.status.error = msg;
+        // Backoff on rate-limit and 5xx.
+        const isRateLimited = /429|Too Many|rate|503|502|timeout/i.test(msg);
+        if (isRateLimited) {
+          backoffLevel = Math.min(backoffLevel + 1, 6);
+          backoffSkips = Math.pow(2, backoffLevel); // 2, 4, 8, 16, 32, 64
+          this.status.error = `${msg} — backing off ${backoffSkips * (this.pollMs / 1000)}s`;
+        }
       }
+      // Always prune — otherwise stale entities linger during API outages.
+      this.pruneStale();
       this.status.count = this.cesiumDS?.entities.values.length ?? 0;
       this._emit();
     };

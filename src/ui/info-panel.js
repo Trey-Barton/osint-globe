@@ -2,29 +2,67 @@
 // auto-refreshes when that entity's props change.
 
 export class InfoPanel {
-  constructor({ panelEl, contentEl, closeBtn }) {
+  constructor({ panelEl, contentEl, closeBtn, viewer, config }) {
     this.panelEl = panelEl;
     this.contentEl = contentEl;
+    this.viewer = viewer;
+    this.config = config ?? {};
     this.selected = null;
     this._refreshTimer = null;
 
     closeBtn.addEventListener("click", () => this.clear());
+
+    // Delegate "Fly to street level" button clicks. One listener instead of
+    // re-attaching on every render.
+    contentEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action='fly-street']");
+      if (!btn) return;
+      const lat = parseFloat(btn.dataset.lat);
+      const lon = parseFloat(btn.dataset.lon);
+      const heading = parseFloat(btn.dataset.heading);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        this.flyToStreet(lat, lon, Number.isFinite(heading) ? heading : 0);
+      }
+    });
+  }
+
+  // Smoothly descend Cesium's main camera to street level at the given
+  // coordinates. Works best with Google 3D Tiles active (photorealistic
+  // buildings appear at this altitude).
+  flyToStreet(lat, lon, headingDeg = 0) {
+    if (!this.viewer) return;
+    this.viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 8),
+      orientation: {
+        heading: Cesium.Math.toRadians(headingDeg),
+        pitch:   Cesium.Math.toRadians(-10),
+        roll:    0,
+      },
+      duration: 3.0,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+    });
   }
 
   show(entity) {
     this.selected = entity;
+    this._lastProps = entity?._props;
     this.panelEl.classList.remove("hidden");
     this.render();
     if (this._refreshTimer) clearInterval(this._refreshTimer);
-    // Re-render frequently so live updates (altitude, speed, heading) are visible.
+    // Event-driven refresh: check for prop changes at 1Hz but only re-render
+    // when the underlying props object was replaced (i.e. new data arrived).
     this._refreshTimer = setInterval(() => {
-      if (this.selected) this.render();
-      else clearInterval(this._refreshTimer);
+      if (!this.selected) { clearInterval(this._refreshTimer); return; }
+      if (this.selected._props !== this._lastProps) {
+        this._lastProps = this.selected._props;
+        this.render();
+      }
     }, 1000);
   }
 
   clear() {
     this.selected = null;
+    this._lastProps = null;
     this.panelEl.classList.add("hidden");
     if (this._refreshTimer) clearInterval(this._refreshTimer);
   }
@@ -60,16 +98,33 @@ export class InfoPanel {
   }
 
   renderCamera(p) {
-    // OSM link lets you see what the camera actually is / nearby context.
-    const osmUrl = `https://www.openstreetmap.org/node/${p.id}`;
-    // Google Street View at the camera coordinates is usually the closest
-    // thing to "see what the camera sees" without scraping the camera itself.
-    const streetUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}`;
+    const osmUrl   = `https://www.openstreetmap.org/node/${p.id}`;
+    const mapsKey  = this.config?.GOOGLE_MAPS_KEY;
+    // Google's Embed API serves Street View at any coordinates for free. If
+    // no key is configured, we fall back to a "View on Maps" external link.
+    const heading  = Number.isFinite(p.direction) ? p.direction : 0;
+    const streetEmbed = mapsKey
+      ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(mapsKey)}&location=${p.lat},${p.lon}&heading=${heading}&pitch=0&fov=90`
+      : null;
+    const openInMaps = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}${heading ? `&heading=${heading}` : ""}`;
+
     this.contentEl.innerHTML = `
       <div class="callsign">${escape(p.name || p.operator || `Camera ${p.id}`)}</div>
       <div class="meta">
         <span class="source-tag cam">${escape(p.source)}</span>
       </div>
+      ${streetEmbed ? `
+      <div class="street-view">
+        <iframe
+          src="${streetEmbed}"
+          width="100%"
+          height="180"
+          frameborder="0"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen></iframe>
+        <div class="street-view-label">Street view · ${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</div>
+      </div>` : ""}
       <div class="grid">
         ${row("Type",        p.type)}
         ${row("Zone",        p.zone)}
@@ -77,12 +132,11 @@ export class InfoPanel {
         ${row("Mount",       p.mount)}
         ${row("Operator",    p.operator)}
         ${row("Description", p.description)}
-        ${row("Lat",         p.lat?.toFixed(5))}
-        ${row("Lon",         p.lon?.toFixed(5))}
       </div>
       <div class="actions">
-        <a class="btn" href="${osmUrl}" target="_blank" rel="noopener">View on OSM</a>
-        <a class="btn" href="${streetUrl}" target="_blank" rel="noopener">Street View</a>
+        <button class="btn primary" data-action="fly-street" data-lat="${p.lat}" data-lon="${p.lon}" data-heading="${heading}">Fly to street level</button>
+        <a class="btn" href="${openInMaps}" target="_blank" rel="noopener">Open in Maps</a>
+        <a class="btn" href="${osmUrl}" target="_blank" rel="noopener">OSM</a>
       </div>
     `;
   }

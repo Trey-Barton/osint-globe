@@ -56,6 +56,8 @@ async function main() {
     panelEl: document.getElementById("infoPanel"),
     contentEl: document.getElementById("infoContent"),
     closeBtn: document.getElementById("infoClose"),
+    viewer,
+    config,
   });
 
   // Click-to-select. Cesium's ScreenSpaceEventHandler gives us a clean entity pick.

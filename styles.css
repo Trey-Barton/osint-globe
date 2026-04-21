@@ -331,6 +331,36 @@ html, body {
   transition: background 0.12s;
 }
 #infoContent .btn:hover { background: rgba(74, 211, 255, 0.18); }
+#infoContent .btn.primary {
+  background: rgba(92, 255, 168, 0.14);
+  border-color: rgba(92, 255, 168, 0.5);
+  color: var(--ok);
+  cursor: pointer;
+}
+#infoContent .btn.primary:hover { background: rgba(92, 255, 168, 0.24); }
+
+/* Street View embed */
+#infoContent .street-view {
+  margin: 8px 0 14px;
+  border: 1px solid var(--panel-br);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+}
+#infoContent .street-view iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+#infoContent .street-view-label {
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-top: 1px solid var(--panel-br);
+}
 
 /* Boot error */
 #bootError {
